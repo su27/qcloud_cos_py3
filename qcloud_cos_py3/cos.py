@@ -80,7 +80,6 @@ class CosBucket(object):
         :param num: 查询的文件的数量，最大支持1000，默认查询数量为1000
         :param context: 起始位置。将上次查询结果的context的字段传入，可实现翻页
         """
-        dir_name = dir_name.lstrip('/')
         url = self._format_url("/files/v2/{app_id}/{bucket}/")
         if dir_name:
             url += str(dir_name) + "/"
@@ -147,7 +146,6 @@ class CosBucket(object):
         :param mime: 文件类型，默认为 application/octet-stream (可选)
         """
         insert = '0' if replace else '1'
-        dir_name = dir_name.lstrip('/')
         url = self._format_url('/files/v2/{app_id}/{bucket}')
         if dir_name is not None:
             url += '/' + dir_name
@@ -259,7 +257,6 @@ class CosBucket(object):
         :param biz_attr: 业务属性（可选）
         :param replace: 是否覆盖（可选）
         """
-        dir_name = dir_name.lstrip('/')
         self.url = self._format_url('/files/v2/{app_id}/{bucket}')
         if dir_name is not None:
             self.url += '/' + dir_name
@@ -305,9 +302,10 @@ class CosBucket(object):
 
         :param: source_file_path: 源文件路径
         :param: dest_file_path: 目标路径
+
+        注意:
+            目标路径若不以 / 开头，则认为是相对路径
         """
-        source_file_path = source_file_path.replace("\\", '/').lstrip('/')
-        dest_file_path = dest_file_path.replace("\\", "/").lstrip('/')
         url = self._format_url(
             '/files/v2/{app_id}/{bucket}/' + source_file_path
         )
@@ -330,9 +328,10 @@ class CosBucket(object):
 
         :param: source_file_path: 源文件路径
         :param: dest_file_path: 目标路径
+
+        注意:
+            目标路径若不以 / 开头，则认为是相对路径
         """
-        source_file_path = source_file_path.replace("\\", '/').lstrip('/')
-        dest_file_path = dest_file_path.replace("\\", "/").lstrip('/')
         url = self._format_url(
             '/files/v2/{app_id}/{bucket}/' + source_file_path
         )
@@ -343,7 +342,7 @@ class CosBucket(object):
         }
         return requests.post(
             url,
-            data={'op': 'copy', 'dest_fileid': source_file_path,
+            data={'op': 'copy', 'dest_fileid': dest_file_path,
                   'to_over_write': '0'},
             files={'filecontent': ('', '', 'application/octet-stream')},
             headers=headers
@@ -355,7 +354,6 @@ class CosBucket(object):
 
         :param file_path: 文件路径
         """
-        file_path = file_path.replace("\\", "/").lstrip('/')
         url = self._format_url(
             '/files/v2/{app_id}/{bucket}/' + file_path
         )
@@ -370,7 +368,6 @@ class CosBucket(object):
 
         :param file_path: 文件路径
         """
-        file_path = file_path.lstrip('/')
         url = self._format_url(
             '/files/v2/{app_id}/{bucket}/{file_path}?op=stat',
             file_path=file_path
@@ -397,7 +394,6 @@ class CosBucket(object):
             'eWPrivateRPublic' # 公有读私有写
         )
 
-        file_path = file_path.lstrip('/')
         url = self._format_url(
             '/files/v2/{app_id}/{bucket}/' + file_path
         )

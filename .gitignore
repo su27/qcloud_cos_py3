@@ -41,3 +41,6 @@ output/
 
 # virtualenv
 venv/
+
+# local config file
+tests/config.py

@@ -2,7 +2,6 @@ Qcloud COS SDK for Python 3
 ===============================
 
 version number: 0.1.0
-author: Dan Su
 
 Overview
 --------
@@ -16,9 +15,7 @@ Docs: https://su27.github.io/qcloud_cos_py3/
 
 Use pip to install:
 
-    # not yet publshed
     $ pip install qcloud_cos_py3
-
 
 Or clone the repo:
 
@@ -27,6 +24,14 @@ Or clone the repo:
 
 Contributing
 ------------
+
+    $ virtualenv -p python3.6 venv
+    $ source venv/bin/activate
+    $ pip install -r requirements.txt
+    $ cp tests/config_example.py tests/config.py
+
+    # Fill the blanks in the file and run
+    $ python -m unittest discover
 
 It's originally forked from [cos-python3-sdk](https://github.com/imu-hupeng/cos-python3-sdk)
 
