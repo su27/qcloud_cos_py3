@@ -7,4 +7,4 @@ test-coverage:
 	coverage run -m unittest discover && coverage report && coverage html
 
 publish:
-	rm dist/* && python setup.py sdist
+	rm -rf dist && python setup.py sdist upload -r pypi
