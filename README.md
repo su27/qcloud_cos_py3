@@ -12,8 +12,11 @@ A 3rd-party SDK for Qcloud COS and Python 3
 Installation / Usage
 --------------------
 
-To install use pip:
+Docs: https://su27.github.io/qcloud_cos_py3/
 
+Use pip to install:
+
+    # not yet publshed
     $ pip install qcloud_cos_py3
 
 
@@ -25,7 +28,7 @@ Or clone the repo:
 Contributing
 ------------
 
-TBD
+It's originally forked from [cos-python3-sdk](https://github.com/imu-hupeng/cos-python3-sdk)
 
 Example
 -------
