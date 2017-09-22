@@ -17,6 +17,10 @@ CosConfig = namedtuple(
 
 
 class MyWriter(MultipartWriter):
+    """
+    aiohttp 的 HTTP header 中，boundary 是带引号的，
+    但 COS 不支持带引号的 boundary，只能重写writer，把引号删掉
+    """
 
     def __init__(self, subtype='mixed', boundary=None):
         super().__init__(subtype=subtype, boundary=boundary)
@@ -38,9 +42,6 @@ class MyWriter(MultipartWriter):
 class CosBucket(object):
 
     def __init__(self, app_id, secret_id, secret_key, bucket_name, region='sh'):
-        """初始化操作
-
-        """
         self.config = CosConfig(app_id, secret_id, secret_key, region, bucket_name)
         self.signer = CosAuth(self.config)
         self.headers = {'Content-Type': 'application/json'}
@@ -51,7 +52,10 @@ class CosBucket(object):
 
     def create_folder(self, dir_name, biz_attr=''):
         """
-        创建目录(https://www.qcloud.com/document/product/436/6061)
+        `创建目录 <https://www.qcloud.com/document/product/436/6061>`_
+
+        :param dir_name: 目录名
+        :param biz_attr: 业务属性（可选）
         """
         dir_name = dir_name.strip('/')
         url = self._format_url(
@@ -69,13 +73,12 @@ class CosBucket(object):
 
     def list_folder(self, dir_name='', prefix=None, num=1000, context=None):
         """
-        列出目录(https://www.qcloud.com/document/product/436/6062)
+        `列出目录 <https://www.qcloud.com/document/product/436/6062>`_
 
-        :param dir_name:文件夹名称
-        :param prefix:前缀
-        :param num:查询的文件的数量，最大支持1000，默认查询数量为1000
-        :param context:翻页标志，将上次查询结果的context的字段传入，即可实现翻页的功能
-        :return 查询结果，为json格式
+        :param dir_name: 文件夹名称
+        :param prefix: 前缀
+        :param num: 查询的文件的数量，最大支持1000，默认查询数量为1000
+        :param context: 起始位置。将上次查询结果的context的字段传入，可实现翻页
         """
         dir_name = dir_name.lstrip('/')
         url = self._format_url("/files/v2/{app_id}/{bucket}/")
@@ -95,7 +98,9 @@ class CosBucket(object):
 
     def stat_folder(self, dir_name):
         """
-        查询目录属性(https://www.qcloud.com/document/product/436/6063)
+        `查询目录属性 <https://www.qcloud.com/document/product/436/6063>`_
+
+        :param dir_name: 目录路径
         """
         dir_name = dir_name.strip('/')
         url = self._format_url(
@@ -109,7 +114,12 @@ class CosBucket(object):
 
     def delete_folder(self, dir_name):
         """
-        删除目录 https://www.qcloud.com/document/product/436/6064
+        `删除目录 <https://www.qcloud.com/document/product/436/6064>`_
+
+        :param dir_name: 目录路径
+
+        注意:
+            虚拟目录无法删除，只能删除显式创建的目录
         """
         dir_name = dir_name.strip('/')
         url = self._format_url(
@@ -126,14 +136,15 @@ class CosBucket(object):
 
     def upload_file(self, file_stream, upload_filename, dir_name="", biz_attr='',
                     replace=True, mime='application/octet-stream'):
-        """简单上传文件(https://www.qcloud.com/document/product/436/6066)
+        """
+        `简单上传文件 <https://www.qcloud.com/document/product/436/6066>`_
 
-        :param file_stream: 文件类似物
+        :param file_stream: 类文件对象
         :param upload_filename: 文件名称
-        :param dir_name: 文件夹名称（可选）
+        :param dir_name: 目录名称（可选）
         :param biz_attr: 业务属性（可选）
         :param replace: 是否覆盖（可选）
-        :return:json数据串
+        :param mime: 文件类型，默认为 application/octet-stream (可选)
         """
         insert = '0' if replace else '1'
         dir_name = dir_name.lstrip('/')
@@ -151,10 +162,18 @@ class CosBucket(object):
             headers=headers
         ).json()
 
-    async def async_upload_file(self, file_content, upload_filename, dir_name="",
-                                biz_attr='', replace=True, mime='image/jpeg'):
+    async def async_upload_file(self, file_stream, upload_filename, dir_name="",
+                                biz_attr='', replace=True,
+                                mime='application/octet-stream'):
         """
-        由于COS不支持带引号的boundary，需要重写writer以生成不带引号的版本
+        异步上传文件 (使用简单上传文件接口)
+
+        :param file_stream: 类文件对象
+        :param upload_filename: 文件名称
+        :param dir_name: 目录名称（可选）
+        :param biz_attr: 业务属性（可选）
+        :param replace: 是否覆盖（可选）
+        :param mime: 文件类型，默认为 application/octet-stream (可选)
         """
         TIMEOUT = 6
         insert = '0' if replace else '1'
@@ -172,7 +191,7 @@ class CosBucket(object):
         pl_bz.set_content_disposition('form-data', name='biz_attr')
         pl_ir = StringPayload(insert)
         pl_ir.set_content_disposition('form-data', name='insertOnly')
-        pl_fc = BytesPayload(file_content)
+        pl_fc = BytesPayload(file_stream.read())
         pl_fc.set_content_disposition('form-data', name='filecontent', filename='')
         pl_fc._headers[CONTENT_DISPOSITION] = 'form-data; name="filecontent"; filename=""'
         with MyWriter('form-data') as writer:
@@ -228,17 +247,17 @@ class CosBucket(object):
 
     def upload_slice_file(self, real_file_path, slice_size, upload_filename,
                           offset=0, dir_name='', biz_attr='', replace=True):
+        # 此代码由 @a270443177 (https://github.com/a270443177) 贡献
         """
-        此分片上传代码由GitHub用户a270443177(https://github.com/a270443177)友情提供
+        `分片上传文件 <https://cloud.tencent.com/document/product/436/6067>`_
 
-        :param real_file_path:
-        :param slice_size:
-        :param upload_filename:
-        :param offset:
-        :param dir_name:
+        :param real_file_path: 文件路径
+        :param slice_size: 分片大小
+        :param upload_filename: 上传文件名
+        :param offset: 起始位移（可选），默认从头开始
+        :param dir_name: 上传目录（可选）
         :param biz_attr: 业务属性（可选）
         :param replace: 是否覆盖（可选）
-        :return:
         """
         dir_name = dir_name.lstrip('/')
         self.url = self._format_url('/files/v2/{app_id}/{bucket}')
@@ -262,12 +281,13 @@ class CosBucket(object):
         return r
 
     def upload_file_from_url(self, url, file_name, dir_name=''):
-        """简单上传文件(https://www.qcloud.com/document/product/436/6066)
+        """
+        从 url 抓取文件并上传
+        （使用简单上传文件接口）
 
         :param url: 文件url地址
         :param file_name: 文件名称
         :param dir_name: 文件夹名称（可选）
-        :return:json数据串
         """
         try:
             r = requests.get(url)
@@ -280,6 +300,12 @@ class CosBucket(object):
         )
 
     def move_file(self, source_file_path, dest_file_path):
+        """
+        `移动文件 <https://cloud.tencent.com/document/product/436/6730>`_
+
+        :param: source_file_path: 源文件路径
+        :param: dest_file_path: 目标路径
+        """
         source_file_path = source_file_path.replace("\\", '/').lstrip('/')
         dest_file_path = dest_file_path.replace("\\", "/").lstrip('/')
         url = self._format_url(
@@ -300,7 +326,10 @@ class CosBucket(object):
 
     def copy_file(self, source_file_path, dest_file_path):
         """
-        复制文件https://www.qcloud.com/document/product/436/7419
+        `拷贝文件 <https://www.qcloud.com/document/product/436/7419>`_
+
+        :param: source_file_path: 源文件路径
+        :param: dest_file_path: 目标路径
         """
         source_file_path = source_file_path.replace("\\", '/').lstrip('/')
         dest_file_path = dest_file_path.replace("\\", "/").lstrip('/')
@@ -322,7 +351,9 @@ class CosBucket(object):
 
     def delete_file(self, file_path):
         """
-        删除文件 https://www.qcloud.com/document/product/436/6073
+        `删除文件 <https://www.qcloud.com/document/product/436/6073>`_
+
+        :param file_path: 文件路径
         """
         file_path = file_path.replace("\\", "/").lstrip('/')
         url = self._format_url(
@@ -335,7 +366,9 @@ class CosBucket(object):
 
     def stat_file(self, file_path):
         """
-        查询文件属性 https://www.qcloud.com/document/api/436/6069
+        `查询文件属性 <https://www.qcloud.com/document/api/436/6069>`_
+
+        :param file_path: 文件路径
         """
         file_path = file_path.lstrip('/')
         url = self._format_url(
@@ -351,7 +384,12 @@ class CosBucket(object):
     def update_file_status(self, file_path, authority='eInvalid',
                            custom_headers=None):
         """
-        修改文件属性 https://www.qcloud.com/document/api/436/6072
+        `修改文件属性 <https://www.qcloud.com/document/api/436/6072>`_
+
+        :param file_path: 文件路径
+        :param authority: 文件权限
+        :param custom_headers: 自定义文件头信息
+        :type authority: eInvalid / eWRPrivate / eWPrivateRPublic
         """
         assert authority in (
             'eInvalid', # 空权限，此时系统会默认调取 Bucket 权限
