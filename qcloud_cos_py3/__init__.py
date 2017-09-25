@@ -1,0 +1,1 @@
+from .cos import CosBucket

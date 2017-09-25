@@ -1,6 +1,6 @@
 import asyncio
 import unittest
-from qcloud_cos_py3.cos import CosBucket
+from qcloud_cos_py3 import CosBucket
 import tests.config as conf
 from io import BytesIO
 

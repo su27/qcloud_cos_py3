@@ -1,7 +1,7 @@
 Qcloud COS SDK for Python 3
 ===============================
 
-version number: 0.1.0
+version number: 0.1.2
 
 Overview
 --------
@@ -38,4 +38,4 @@ It's originally forked from [cos-python3-sdk](https://github.com/imu-hupeng/cos-
 Example
 -------
 
-TBD
+Please check `tests/test_cos.py`
