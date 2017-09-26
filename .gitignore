@@ -10,16 +10,9 @@
 # Packages
 *.egg
 *.egg-info
-build
 eggs
-parts
-bin
-var
-sdist
-develop-eggs
-.installed.cfg
-lib
-lib64
+build/
+dist/
 
 # Installer logs
 pip-log.txt
@@ -27,7 +20,9 @@ pip-log.txt
 # Unit test / coverage reports
 .coverage
 .tox
+.cache
 nosetests.xml
+htmlcov/
 
 # Complexity
 output/*.html

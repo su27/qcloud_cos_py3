@@ -79,6 +79,11 @@ class CosBucket(object):
         :param prefix: 前缀
         :param num: 查询的文件的数量，最大支持1000，默认查询数量为1000
         :param context: 起始位置。将上次查询结果的context的字段传入，可实现翻页
+
+          注意：如果在进行列表操作的目录是真实目录而非虚拟目录
+          (上传文件路径中带有斜线会认为是虚拟目录),
+          实际列出的文件数量会是`num - 1`
+
         """
         url = self._format_url("/files/v2/{app_id}/{bucket}/")
         if dir_name:
@@ -250,13 +255,21 @@ class CosBucket(object):
         `分片上传文件 <https://cloud.tencent.com/document/product/436/6067>`_
 
         :param real_file_path: 文件路径
-        :param slice_size: 分片大小
+        :param slice_size: 分片大小，单位为 Byte，有效取值：
+
+          * 524288 (512 KB)
+          * 1048576 (1 MB)
+          * 2097152 (2 MB)
+          * 3145728 (3 MB)
+
         :param upload_filename: 上传文件名
         :param offset: 起始位移（可选），默认从头开始
         :param dir_name: 上传目录（可选）
         :param biz_attr: 业务属性（可选）
         :param replace: 是否覆盖（可选）
+
         """
+        assert slice_size
         self.url = self._format_url('/files/v2/{app_id}/{bucket}')
         if dir_name is not None:
             self.url += '/' + dir_name
@@ -290,11 +303,25 @@ class CosBucket(object):
             r = requests.get(url)
             r.raise_for_status()
         except:
-            return None
+            return {'error': 'download file failed'}
         return self.upload_file(
             BytesIO(r.content), file_name, dir_name,
             mime=r.headers.get('content-type')
         )
+
+    def get_file(self, file_path):
+        """
+        :param: file_path: 文件路径
+        """
+        url = self._format_url(
+            '/files/v2/{app_id}/{bucket}/' + file_path
+        )
+        headers = {
+            'Authorization': self.signer.sign_download(
+                self.config.bucket, file_path, 30
+            )
+        }
+        return requests.get(url, headers=headers).content
 
     def move_file(self, source_file_path, dest_file_path):
         """

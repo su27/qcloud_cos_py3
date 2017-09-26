@@ -1,10 +1,10 @@
-.PHONY: test test-coverage
+.PHONY: test test-coverage publish
 
 test:
-	python -m unittest discover
+	py.test
 
 test-coverage:
-	coverage run -m unittest discover && coverage report && coverage html
+	py.test --cov=qcloud_cos_py3 --cov-report html tests/
 
 publish:
 	rm -rf dist && python setup.py sdist upload -r pypi

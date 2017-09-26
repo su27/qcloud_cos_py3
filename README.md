@@ -1,7 +1,7 @@
 Qcloud COS SDK for Python 3
 ===============================
 
-version number: 0.1.2
+version number: 0.1.3
 
 Overview
 --------
@@ -31,7 +31,7 @@ Contributing
     $ cp tests/config_example.py tests/config.py
 
     # Fill the blanks in the file and run
-    $ python -m unittest discover
+    $ make test-coverage
 
 It's originally forked from [cos-python3-sdk](https://github.com/imu-hupeng/cos-python3-sdk)
 
