@@ -279,7 +279,11 @@
 <li><strong>dir_name</strong> – 文件夹名称</li>
 <li><strong>prefix</strong> – 前缀</li>
 <li><strong>num</strong> – 查询的文件的数量，最大支持1000，默认查询数量为1000</li>
-<li><strong>context</strong> – 起始位置。将上次查询结果的context的字段传入，可实现翻页</li>
+<li><strong>context</strong> – <p>起始位置。将上次查询结果的context的字段传入，可实现翻页</p>
+<p>注意：如果在进行列表操作的目录是真实目录而非虚拟目录
+(上传文件路径中带有斜线会认为是虚拟目录),
+实际列出的文件数量会是`num - 1`</p>
+</li>
 </ul>
 </td>
 </tr>
