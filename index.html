@@ -255,6 +255,19 @@
 </dd></dl>
 
 <dl class="method">
+<dt id="qcloud_cos_py3.cos.CosBucket.get_file">
+<code class="descname">get_file</code><span class="sig-paren">(</span><em>file_path</em><span class="sig-paren">)</span><a class="headerlink" href="#qcloud_cos_py3.cos.CosBucket.get_file" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Param:</th><td class="field-body">file_path: 文件路径</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
 <dt id="qcloud_cos_py3.cos.CosBucket.list_folder">
 <code class="descname">list_folder</code><span class="sig-paren">(</span><em>dir_name=''</em>, <em>prefix=None</em>, <em>num=1000</em>, <em>context=None</em><span class="sig-paren">)</span><a class="headerlink" href="#qcloud_cos_py3.cos.CosBucket.list_folder" title="Permalink to this definition">¶</a></dt>
 <dd><p><a class="reference external" href="https://www.qcloud.com/document/product/436/6062">列出目录</a></p>
@@ -393,7 +406,14 @@
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
 <li><strong>real_file_path</strong> – 文件路径</li>
-<li><strong>slice_size</strong> – 分片大小</li>
+<li><strong>slice_size</strong> – <p>分片大小，单位为 Byte，有效取值：</p>
+<ul>
+<li>524288 (512 KB)</li>
+<li>1048576 (1 MB)</li>
+<li>2097152 (2 MB)</li>
+<li>3145728 (3 MB)</li>
+</ul>
+</li>
 <li><strong>upload_filename</strong> – 上传文件名</li>
 <li><strong>offset</strong> – 起始位移（可选），默认从头开始</li>
 <li><strong>dir_name</strong> – 上传目录（可选）</li>
