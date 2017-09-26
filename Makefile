@@ -7,4 +7,4 @@ test-coverage:
 	py.test --cov=qcloud_cos_py3 --cov-report html tests/
 
 publish:
-	rm -rf dist && python setup.py sdist upload -r pypi
+	rm -rf dist && python setup.py sdist upload -r pypi && echo "Yeah! https://pypi.python.org/pypi/qcloud_cos_py3"

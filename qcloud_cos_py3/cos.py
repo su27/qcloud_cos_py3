@@ -82,7 +82,7 @@ class CosBucket(object):
 
           注意：如果在进行列表操作的目录是真实目录而非虚拟目录
           (上传文件路径中带有斜线会认为是虚拟目录),
-          实际列出的文件数量会是`num - 1`
+          实际列出的文件数量会是 num - 1
 
         """
         url = self._format_url("/files/v2/{app_id}/{bucket}/")
@@ -311,7 +311,7 @@ class CosBucket(object):
 
     def get_file(self, file_path):
         """
-        :param: file_path: 文件路径
+        :param file_path: 文件路径
         """
         url = self._format_url(
             '/files/v2/{app_id}/{bucket}/' + file_path
@@ -327,8 +327,8 @@ class CosBucket(object):
         """
         `移动文件 <https://cloud.tencent.com/document/product/436/6730>`_
 
-        :param: source_file_path: 源文件路径
-        :param: dest_file_path: 目标路径
+        :param source_file_path: 源文件路径
+        :param dest_file_path: 目标路径
 
         注意:
             目标路径若不以 / 开头，则认为是相对路径
@@ -353,8 +353,8 @@ class CosBucket(object):
         """
         `拷贝文件 <https://www.qcloud.com/document/product/436/7419>`_
 
-        :param: source_file_path: 源文件路径
-        :param: dest_file_path: 目标路径
+        :param source_file_path: 源文件路径
+        :param dest_file_path: 目标路径
 
         注意:
             目标路径若不以 / 开头，则认为是相对路径
