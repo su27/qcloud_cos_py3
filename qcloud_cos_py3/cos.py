@@ -50,7 +50,7 @@ class CosBucket(object):
         url_pattern = "http://{region}.file.myqcloud.com" + url_pattern
         return url_pattern.format(**self.config._asdict(), **extra)
 
-    def create_folder(self, dir_name, biz_attr=''):
+    def create_folder(self, dir_name, *, biz_attr=''):
         """
         `创建目录 <https://www.qcloud.com/document/product/436/6061>`_
 
@@ -71,7 +71,7 @@ class CosBucket(object):
             headers=headers
         ).json()
 
-    def list_folder(self, dir_name='', prefix=None, num=1000, context=None):
+    def list_folder(self, dir_name, *, prefix=None, num=1000, context=None):
         """
         `列出目录 <https://www.qcloud.com/document/product/436/6062>`_
 
@@ -138,8 +138,8 @@ class CosBucket(object):
         }
         return requests.post(url, json={'op': 'delete'}, headers=headers).json()
 
-    def upload_file(self, file_stream, upload_filename, dir_name="", biz_attr='',
-                    replace=True, mime='application/octet-stream'):
+    def upload_file(self, file_stream, upload_filename, *, dir_name='',
+                    biz_attr='', replace=True, mime='application/octet-stream'):
         """
         `简单上传文件 <https://www.qcloud.com/document/product/436/6066>`_
 
@@ -165,8 +165,8 @@ class CosBucket(object):
             headers=headers
         ).json()
 
-    async def async_upload_file(self, file_stream, upload_filename, dir_name="",
-                                biz_attr='', replace=True,
+    async def async_upload_file(self, file_stream, upload_filename, *,
+                                dir_name="", biz_attr='', replace=True,
                                 mime='application/octet-stream'):
         """
         异步上传文件 (使用简单上传文件接口)
@@ -248,7 +248,7 @@ class CosBucket(object):
         r = requests.post(url=self.url, files=data, headers=headers).json()
         return r['data']
 
-    def upload_slice_file(self, real_file_path, slice_size, upload_filename,
+    def upload_slice_file(self, real_file_path, slice_size, upload_filename, *,
                           offset=0, dir_name='', biz_attr='', replace=True):
         # 此代码由 @a270443177 (https://github.com/a270443177) 贡献
         """
@@ -290,7 +290,7 @@ class CosBucket(object):
             r = self._upload_slice_finish(session=session, file_size=file_size)
         return r
 
-    def upload_file_from_url(self, url, file_name, dir_name=''):
+    def upload_file_from_url(self, url, file_name, *, dir_name=''):
         """
         从 url 抓取文件并上传
         （使用简单上传文件接口）
@@ -305,7 +305,7 @@ class CosBucket(object):
         except:
             return {'error': 'download file failed'}
         return self.upload_file(
-            BytesIO(r.content), file_name, dir_name,
+            BytesIO(r.content), file_name, dir_name=dir_name,
             mime=r.headers.get('content-type')
         )
 
@@ -405,7 +405,7 @@ class CosBucket(object):
         }
         return requests.get(url, headers=headers).json()
 
-    def update_file_status(self, file_path, authority='eInvalid',
+    def update_file_status(self, file_path, *, authority='eInvalid',
                            custom_headers=None):
         """
         `修改文件属性 <https://www.qcloud.com/document/api/436/6072>`_
