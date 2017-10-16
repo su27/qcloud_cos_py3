@@ -56,10 +56,11 @@ class CosBucket(object):
 
     def _req(self, method, url, *args, **kwargs):
         assert method in ('get', 'post')
+        send_req = getattr(requests, method)
         res = {}
         for _ in range(MAX_RETRY):
             try:
-                res = getattr(requests, method)(url, *args, **kwargs).json()
+                res = send_req(url, *args, **kwargs).json()
             except:
                 continue
             code = res['code']
@@ -147,7 +148,8 @@ class CosBucket(object):
         :param dir_name: 目录路径
 
         注意:
-            虚拟目录无法删除，只能删除显式创建的目录
+            * 虚拟目录无法删除，只能删除显式创建的目录
+            * 若显式目录中有文件存在，仍可删除该目录，但文件仍然存在于虚拟目录中
         """
         dir_name = dir_name.strip('/')
         url = self._format_url(
