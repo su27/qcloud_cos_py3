@@ -164,7 +164,7 @@
 <em class="property">class </em><code class="descclassname">qcloud_cos_py3.cos.</code><code class="descname">CosBucket</code><span class="sig-paren">(</span><em>app_id</em>, <em>secret_id</em>, <em>secret_key</em>, <em>bucket_name</em>, <em>region='sh'</em><span class="sig-paren">)</span><a class="headerlink" href="#qcloud_cos_py3.cos.CosBucket" title="Permalink to this definition">¶</a></dt>
 <dd><dl class="method">
 <dt id="qcloud_cos_py3.cos.CosBucket.async_upload_file">
-<code class="descname">async_upload_file</code><span class="sig-paren">(</span><em>file_stream</em>, <em>upload_filename</em>, <em>dir_name=''</em>, <em>biz_attr=''</em>, <em>replace=True</em>, <em>mime='application/octet-stream'</em><span class="sig-paren">)</span><a class="headerlink" href="#qcloud_cos_py3.cos.CosBucket.async_upload_file" title="Permalink to this definition">¶</a></dt>
+<code class="descname">async_upload_file</code><span class="sig-paren">(</span><em>file_stream</em>, <em>upload_filename</em>, <em>*</em>, <em>dir_name=''</em>, <em>biz_attr=''</em>, <em>replace=True</em>, <em>mime='application/octet-stream'</em><span class="sig-paren">)</span><a class="headerlink" href="#qcloud_cos_py3.cos.CosBucket.async_upload_file" title="Permalink to this definition">¶</a></dt>
 <dd><p>异步上传文件 (使用简单上传文件接口)</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -208,7 +208,7 @@
 
 <dl class="method">
 <dt id="qcloud_cos_py3.cos.CosBucket.create_folder">
-<code class="descname">create_folder</code><span class="sig-paren">(</span><em>dir_name</em>, <em>biz_attr=''</em><span class="sig-paren">)</span><a class="headerlink" href="#qcloud_cos_py3.cos.CosBucket.create_folder" title="Permalink to this definition">¶</a></dt>
+<code class="descname">create_folder</code><span class="sig-paren">(</span><em>dir_name</em>, <em>*</em>, <em>biz_attr=''</em><span class="sig-paren">)</span><a class="headerlink" href="#qcloud_cos_py3.cos.CosBucket.create_folder" title="Permalink to this definition">¶</a></dt>
 <dd><p><a class="reference external" href="https://www.qcloud.com/document/product/436/6061">创建目录</a></p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -252,7 +252,11 @@
 </table>
 <dl class="docutils">
 <dt>注意:</dt>
-<dd>虚拟目录无法删除，只能删除显式创建的目录</dd>
+<dd><ul class="first last simple">
+<li>虚拟目录无法删除，只能删除显式创建的目录</li>
+<li>若显式目录中有文件存在，仍可删除该目录，但文件仍然存在于虚拟目录中</li>
+</ul>
+</dd>
 </dl>
 </dd></dl>
 
@@ -271,7 +275,7 @@
 
 <dl class="method">
 <dt id="qcloud_cos_py3.cos.CosBucket.list_folder">
-<code class="descname">list_folder</code><span class="sig-paren">(</span><em>dir_name=''</em>, <em>prefix=None</em>, <em>num=1000</em>, <em>context=None</em><span class="sig-paren">)</span><a class="headerlink" href="#qcloud_cos_py3.cos.CosBucket.list_folder" title="Permalink to this definition">¶</a></dt>
+<code class="descname">list_folder</code><span class="sig-paren">(</span><em>dir_name</em>, <em>*</em>, <em>prefix=None</em>, <em>num=1000</em>, <em>context=None</em><span class="sig-paren">)</span><a class="headerlink" href="#qcloud_cos_py3.cos.CosBucket.list_folder" title="Permalink to this definition">¶</a></dt>
 <dd><p><a class="reference external" href="https://www.qcloud.com/document/product/436/6062">列出目录</a></p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -345,7 +349,7 @@
 
 <dl class="method">
 <dt id="qcloud_cos_py3.cos.CosBucket.update_file_status">
-<code class="descname">update_file_status</code><span class="sig-paren">(</span><em>file_path</em>, <em>authority='eInvalid'</em>, <em>custom_headers=None</em><span class="sig-paren">)</span><a class="headerlink" href="#qcloud_cos_py3.cos.CosBucket.update_file_status" title="Permalink to this definition">¶</a></dt>
+<code class="descname">update_file_status</code><span class="sig-paren">(</span><em>file_path</em>, <em>*</em>, <em>authority='eInvalid'</em>, <em>custom_headers=None</em><span class="sig-paren">)</span><a class="headerlink" href="#qcloud_cos_py3.cos.CosBucket.update_file_status" title="Permalink to this definition">¶</a></dt>
 <dd><p><a class="reference external" href="https://www.qcloud.com/document/api/436/6072">修改文件属性</a></p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -364,7 +368,7 @@
 
 <dl class="method">
 <dt id="qcloud_cos_py3.cos.CosBucket.upload_file">
-<code class="descname">upload_file</code><span class="sig-paren">(</span><em>file_stream</em>, <em>upload_filename</em>, <em>dir_name=''</em>, <em>biz_attr=''</em>, <em>replace=True</em>, <em>mime='application/octet-stream'</em><span class="sig-paren">)</span><a class="headerlink" href="#qcloud_cos_py3.cos.CosBucket.upload_file" title="Permalink to this definition">¶</a></dt>
+<code class="descname">upload_file</code><span class="sig-paren">(</span><em>file_stream</em>, <em>upload_filename</em>, <em>*</em>, <em>dir_name=''</em>, <em>biz_attr=''</em>, <em>replace=True</em>, <em>mime='application/octet-stream'</em><span class="sig-paren">)</span><a class="headerlink" href="#qcloud_cos_py3.cos.CosBucket.upload_file" title="Permalink to this definition">¶</a></dt>
 <dd><p><a class="reference external" href="https://www.qcloud.com/document/product/436/6066">简单上传文件</a></p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -386,7 +390,7 @@
 
 <dl class="method">
 <dt id="qcloud_cos_py3.cos.CosBucket.upload_file_from_url">
-<code class="descname">upload_file_from_url</code><span class="sig-paren">(</span><em>url</em>, <em>file_name</em>, <em>dir_name=''</em><span class="sig-paren">)</span><a class="headerlink" href="#qcloud_cos_py3.cos.CosBucket.upload_file_from_url" title="Permalink to this definition">¶</a></dt>
+<code class="descname">upload_file_from_url</code><span class="sig-paren">(</span><em>url</em>, <em>file_name</em>, <em>*</em>, <em>dir_name=''</em><span class="sig-paren">)</span><a class="headerlink" href="#qcloud_cos_py3.cos.CosBucket.upload_file_from_url" title="Permalink to this definition">¶</a></dt>
 <dd><p>从 url 抓取文件并上传
 （使用简单上传文件接口）</p>
 <table class="docutils field-list" frame="void" rules="none">
@@ -406,7 +410,7 @@
 
 <dl class="method">
 <dt id="qcloud_cos_py3.cos.CosBucket.upload_slice_file">
-<code class="descname">upload_slice_file</code><span class="sig-paren">(</span><em>real_file_path</em>, <em>slice_size</em>, <em>upload_filename</em>, <em>offset=0</em>, <em>dir_name=''</em>, <em>biz_attr=''</em>, <em>replace=True</em><span class="sig-paren">)</span><a class="headerlink" href="#qcloud_cos_py3.cos.CosBucket.upload_slice_file" title="Permalink to this definition">¶</a></dt>
+<code class="descname">upload_slice_file</code><span class="sig-paren">(</span><em>real_file_path</em>, <em>slice_size</em>, <em>upload_filename</em>, <em>*</em>, <em>offset=0</em>, <em>dir_name=''</em>, <em>biz_attr=''</em>, <em>replace=True</em><span class="sig-paren">)</span><a class="headerlink" href="#qcloud_cos_py3.cos.CosBucket.upload_slice_file" title="Permalink to this definition">¶</a></dt>
 <dd><p><a class="reference external" href="https://cloud.tencent.com/document/product/436/6067">分片上传文件</a></p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
