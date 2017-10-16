@@ -1,5 +1,7 @@
 import os
 import aiohttp
+import time
+import random
 from aiohttp import MultipartWriter
 from aiohttp.hdrs import CONTENT_DISPOSITION, CONTENT_TYPE
 from aiohttp.payload import StringPayload, BytesPayload
@@ -14,6 +16,8 @@ CosConfig = namedtuple(
     'CosConfig',
     ['app_id', 'secret_id', 'secret_key', 'region', 'bucket']
 )
+
+MAX_RETRY = 3
 
 
 class MyWriter(MultipartWriter):
@@ -50,6 +54,26 @@ class CosBucket(object):
         url_pattern = "http://{region}.file.myqcloud.com" + url_pattern
         return url_pattern.format(**self.config._asdict(), **extra)
 
+    def _req(self, method, url, *args, **kwargs):
+        assert method in ('get', 'post')
+        res = {}
+        for _ in range(MAX_RETRY):
+            try:
+                res = getattr(requests, method)(url, *args, **kwargs).json()
+            except:
+                continue
+            code = res['code']
+            # Operating too fast or
+            # Writing too fast on a single dir
+            if code in (-71, -143):
+                time.sleep(random.randint(1, 3))
+                continue
+            else:
+                return res
+        else:
+            raise Exception('API request failed when %s %s: %s'
+                            % (method, url, res))
+
     def create_folder(self, dir_name, *, biz_attr=''):
         """
         `创建目录 <https://www.qcloud.com/document/product/436/6061>`_
@@ -66,10 +90,10 @@ class CosBucket(object):
             'Content-Type': 'application/json',
             'Authorization': self.signer.sign_more(self.config.bucket, '', 30)
         }
-        return requests.post(
-            url, json={'op': 'create', 'biz_attr': biz_attr},
+        return self._req(
+            'post', url, json={'op': 'create', 'biz_attr': biz_attr},
             headers=headers
-        ).json()
+        )
 
     def list_folder(self, dir_name, *, prefix=None, num=1000, context=None):
         """
@@ -98,7 +122,7 @@ class CosBucket(object):
         headers = {
             'Authorization': self.signer.sign_more(self.config.bucket, '', 30)
         }
-        return requests.get(url, headers=headers).json()
+        return self._req('get', url, headers=headers)
 
     def stat_folder(self, dir_name):
         """
@@ -114,7 +138,7 @@ class CosBucket(object):
         headers = {
             'Authorization': self.signer.sign_more(self.config.bucket, '', 30)
         }
-        return requests.get(url, headers=headers).json()
+        return self._req('get', url, headers=headers)
 
     def delete_folder(self, dir_name):
         """
@@ -136,7 +160,7 @@ class CosBucket(object):
                 self.config.bucket, dir_name + '/'
             )
         }
-        return requests.post(url, json={'op': 'delete'}, headers=headers).json()
+        return self._req('post', url, json={'op': 'delete'}, headers=headers)
 
     def upload_file(self, file_stream, upload_filename, *, dir_name='',
                     biz_attr='', replace=True, mime='application/octet-stream'):
@@ -158,12 +182,12 @@ class CosBucket(object):
         headers = {
             'Authorization': self.signer.sign_more(self.config.bucket, '', 30)
         }
-        return requests.post(
-            url,
+        return self._req(
+            'post', url,
             data={'op': 'upload', 'biz_attr': biz_attr, 'insertOnly': insert},
             files={'filecontent': ('', file_stream, mime)},
             headers=headers
-        ).json()
+        )
 
     async def async_upload_file(self, file_stream, upload_filename, *,
                                 dir_name="", biz_attr='', replace=True,
@@ -220,7 +244,7 @@ class CosBucket(object):
             'biz_attr': biz_attr,
             'insertOnly': '0' if replace else '1',
         }
-        r = requests.post(url=self.url, files=data, headers=headers).json()
+        r = self._req('post', self.url, files=data, headers=headers)
         return r['data']['session']
 
     def _upload_slice_data(self, filecontent, session, offset):
@@ -233,7 +257,7 @@ class CosBucket(object):
             'session': session,
             'offset': str(offset)
         }
-        r = requests.post(url=self.url, files=data, headers=headers).json()
+        r = self._req('post', self.url, files=data, headers=headers)
         return r['data']
 
     def _upload_slice_finish(self, session, file_size):
@@ -245,7 +269,7 @@ class CosBucket(object):
             'session': session,
             'filesize': str(file_size)
         }
-        r = requests.post(url=self.url, files=data, headers=headers).json()
+        r = self._req('post', self.url, files=data, headers=headers)
         return r['data']
 
     def upload_slice_file(self, real_file_path, slice_size, upload_filename, *,
@@ -341,13 +365,13 @@ class CosBucket(object):
                 self.config.bucket, source_file_path
             )
         }
-        return requests.post(
-            url,
+        return self._req(
+            'post', url,
             data={'op': 'move', 'dest_fileid': dest_file_path,
                   'to_over_write': '0'},
             files={'filecontent': ('', '', 'application/octet-stream')},
             headers=headers
-        ).json()
+        )
 
     def copy_file(self, source_file_path, dest_file_path):
         """
@@ -367,13 +391,13 @@ class CosBucket(object):
                 self.config.bucket, source_file_path
             )
         }
-        return requests.post(
-            url,
+        return self._req(
+            'post', url,
             data={'op': 'copy', 'dest_fileid': dest_file_path,
                   'to_over_write': '0'},
             files={'filecontent': ('', '', 'application/octet-stream')},
             headers=headers
-        ).json()
+        )
 
     def delete_file(self, file_path):
         """
@@ -387,7 +411,7 @@ class CosBucket(object):
         headers = {
             'Authorization': self.signer.sign_once(self.config.bucket, file_path)
         }
-        return requests.post(url, json={'op': 'delete'}, headers=headers).json()
+        return self._req('post', url, json={'op': 'delete'}, headers=headers)
 
     def stat_file(self, file_path):
         """
@@ -403,7 +427,7 @@ class CosBucket(object):
             'Content-Type': 'application/json',
             'Authorization': self.signer.sign_more(self.config.bucket, '', 30)
         }
-        return requests.get(url, headers=headers).json()
+        return self._req('get', url, headers=headers)
 
     def update_file_status(self, file_path, *, authority='eInvalid',
                            custom_headers=None):
@@ -432,4 +456,4 @@ class CosBucket(object):
             'authority': authority,
             'custom_headers': custom_headers or {}
         }
-        return requests.post(url, json=payload, headers=headers).json()
+        return self._req('post', url, json=payload, headers=headers)
