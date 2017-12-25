@@ -407,6 +407,7 @@ class CosBucket(object):
 
         :param file_path: 文件路径
         """
+        file_path = file_path.lstrip('/')
         url = self._format_url(
             '/files/v2/{app_id}/{bucket}/' + file_path
         )
@@ -441,6 +442,7 @@ class CosBucket(object):
         :param custom_headers: 自定义文件头信息
         :type authority: eInvalid / eWRPrivate / eWPrivateRPublic
         """
+        file_path = file_path.lstrip('/')
         assert authority in (
             'eInvalid', # 空权限，此时系统会默认调取 Bucket 权限
             'eWRPrivate', # 私有读写
