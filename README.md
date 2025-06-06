@@ -1,7 +1,7 @@
 Qcloud COS SDK for Python 3
 ===============================
 
-version: 0.1.4
+version: 0.1.5
 
 Overview
 --------
