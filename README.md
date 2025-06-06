@@ -47,9 +47,9 @@ the values. After configuration run:
 
 It's originally forked from [cos-python3-sdk](https://github.com/imu-hupeng/cos-python3-sdk)
 
-Async uploads depend on `aiohttp`. When `aiohttp` is missing the library
-falls back to a thread-based implementation that preserves the same API but may
-be slower.
+Async uploads use Python's standard ``asyncio`` to offload the synchronous
+``upload_file`` call to a background thread. No external dependencies are
+required.
 
 Example
 -------

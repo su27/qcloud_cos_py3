@@ -1,18 +1,7 @@
 import os
 import time
 import random
-try:
-    import aiohttp
-    from aiohttp import MultipartWriter
-    from aiohttp.hdrs import CONTENT_DISPOSITION, CONTENT_TYPE
-    from aiohttp.payload import StringPayload, BytesPayload
-except ImportError:  # pragma: no cover - optional dependency
-    aiohttp = None
-    MultipartWriter = None
-    CONTENT_DISPOSITION = 'Content-Disposition'
-    CONTENT_TYPE = 'Content-Type'
-    StringPayload = None
-    BytesPayload = None
+import asyncio
 from collections import namedtuple
 try:
     import requests
@@ -29,34 +18,6 @@ CosConfig = namedtuple(
 )
 
 MAX_RETRY = 3
-
-
-if aiohttp is not None:
-    class MyWriter(MultipartWriter):
-        """
-        aiohttp 的 HTTP header 中，boundary 是带引号的，
-        但 COS 不支持带引号的 boundary，只能重写writer，把引号删掉
-        """
-
-        def __init__(self, subtype='mixed', boundary=None):
-            super().__init__(subtype=subtype, boundary=boundary)
-            self._content_type = self._content_type.replace('"', '')
-
-        def append_payload(self, payload):
-            """Adds a new body part to multipart writer."""
-            if payload.content_type == 'application/octet-stream':
-                payload.headers[CONTENT_TYPE] = payload.content_type
-
-            # render headers
-            headers = ''.join(
-                [k + ': ' + v + '\r\n' for k, v in payload.headers.items()]
-            ).encode('utf-8') + b'\r\n'
-
-            self._parts.append((payload, headers, '', ''))
-else:  # pragma: no cover - used when aiohttp is missing
-    class MyWriter:
-        pass
-
 
 class CosBucket(object):
 
@@ -236,36 +197,17 @@ class CosBucket(object):
         headers = {
             'Authorization': self.signer.sign_more(self.config.bucket, '', 30)
         }
-        if aiohttp is None:
-            # fall back to thread-based upload when aiohttp is unavailable
-            import asyncio
-            async def _sync():
-                return self.upload_file(
-                    BytesIO(file_stream.read()), upload_filename,
-                    dir_name=dir_name, biz_attr=biz_attr,
-                    replace=replace, mime=mime,
-                )
-            return await asyncio.to_thread(_sync)
+        data = file_stream.read()
 
-        pl_op = StringPayload('upload')
-        pl_op.set_content_disposition('form-data', name='op')
-        pl_bz = StringPayload(biz_attr)
-        pl_bz.set_content_disposition('form-data', name='biz_attr')
-        pl_ir = StringPayload(insert)
-        pl_ir.set_content_disposition('form-data', name='insertOnly')
-        pl_fc = BytesPayload(file_stream.read())
-        pl_fc.set_content_disposition('form-data', name='filecontent', filename='')
-        pl_fc._headers[CONTENT_DISPOSITION] = 'form-data; name="filecontent"; filename=""'
-        with MyWriter('form-data') as writer:
-            writer.append(pl_op)
-            writer.append(pl_bz)
-            writer.append(pl_ir)
-            writer.append(pl_fc)
+        def _upload():
+            return self.upload_file(
+                BytesIO(data), upload_filename,
+                dir_name=dir_name, biz_attr=biz_attr,
+                replace=replace, mime=mime,
+            )
 
-        async with aiohttp.ClientSession() as session:
-            async with session.post(url, data=writer, headers=headers,
-                                    timeout=TIMEOUT) as resp:
-                return await resp.json()
+        loop = asyncio.get_event_loop()
+        return await loop.run_in_executor(None, _upload)
 
     def _upload_slice_control(self, file_size, slice_size, biz_attr, replace):
         headers = {

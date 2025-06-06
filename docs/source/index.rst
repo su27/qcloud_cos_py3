@@ -13,8 +13,8 @@ The ``CosBucket`` constructor accepts an optional ``endpoint`` argument which
 defaults to ``"{region}.file.myqcloud.com"``. Providing a custom endpoint makes
 it possible to use official domains and enables HTTPS access.
 
-``async_upload_file`` uses ``aiohttp`` when available, otherwise a slower
-thread-based fallback is used.
+``async_upload_file`` relies on :mod:`asyncio` to execute ``upload_file`` in a
+background thread, so it works without extra dependencies.
 
 
 
