@@ -28,9 +28,21 @@ Contributing
     $ virtualenv -p python3.6 venv
     $ source venv/bin/activate
     $ pip install -r requirements.txt
-    $ cp tests/config_example.py tests/config.py
 
-    # Fill the blanks in the file and run
+Tests rely on COS credentials which can be provided by setting the following
+environment variables:
+
+```
+QCLOUD_APP_ID
+QCLOUD_SECRET_ID
+QCLOUD_SECRET_KEY
+QCLOUD_BUCKET
+QCLOUD_REGION  # optional, defaults to "sh"
+```
+
+Alternatively, copy `tests/config_example.py` to `tests/config.py` and fill in
+the values. After configuration run:
+
     $ make test-coverage
 
 It's originally forked from [cos-python3-sdk](https://github.com/imu-hupeng/cos-python3-sdk)

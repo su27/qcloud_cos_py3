@@ -1,28 +1,60 @@
+import os
 import asyncio
 import tempfile
 import unittest
 from qcloud_cos_py3 import CosBucket
-import tests.config as conf
+try:
+    import tests.config as conf
+except Exception:  # pragma: no cover - optional config
+    conf = None
 from io import BytesIO
 
-cos = CosBucket(
-    conf.QCLOUD_APP_ID,
-    conf.QCLOUD_SECRET_ID,
-    conf.QCLOUD_SECRET_KEY,
-    conf.QCLOUD_BUCKET
-)
+
+def _load_conf():
+    keys = [
+        'QCLOUD_APP_ID',
+        'QCLOUD_SECRET_ID',
+        'QCLOUD_SECRET_KEY',
+        'QCLOUD_BUCKET',
+        'QCLOUD_REGION',
+    ]
+    cfg = {k: os.environ.get(k) for k in keys}
+    if conf:
+        for k in keys:
+            cfg[k] = cfg[k] or getattr(conf, k, '')
+    if all(cfg[k] for k in keys[:4]):
+        cfg['QCLOUD_REGION'] = cfg['QCLOUD_REGION'] or 'sh'
+        return cfg
+    return None
+
+
+_CONF = _load_conf()
+
+if _CONF:
+    cos = CosBucket(
+        _CONF['QCLOUD_APP_ID'],
+        _CONF['QCLOUD_SECRET_ID'],
+        _CONF['QCLOUD_SECRET_KEY'],
+        _CONF['QCLOUD_BUCKET'],
+        region=_CONF['QCLOUD_REGION'],
+    )
+else:
+    cos = None
 
 
 class TestCos(unittest.TestCase):
 
     def setUp(self):
+        if not cos:
+            self.skipTest('COS credentials not configured')
         self.cos = cos
         res = self.cos.create_folder('cos_test')
         assert res['code'] == 0
 
     def tearDown(self):
-        res = self.cos.delete_folder('cos_test')
-        assert res['code'] == 0
+        if cos:
+            res = self.cos.delete_folder('cos_test')
+            assert res['code'] == 0
 
     def test_operations(self):
         # 上传文件
@@ -112,24 +144,24 @@ class TestCos(unittest.TestCase):
         fp = tempfile.NamedTemporaryFile()
         fp.write(b'1234567890' * 150000)
         fp.seek(0)
-        res = cos.upload_slice_file(fp.name, 524288, 'slice.txt', dir_name='/cos_test')
+        res = self.cos.upload_slice_file(fp.name, 524288, 'slice.txt', dir_name='/cos_test')
         assert res['resource_path'].endswith('/cos_test/slice.txt')
-        res = cos.stat_file('/cos_test/slice.txt')
+        res = self.cos.stat_file('/cos_test/slice.txt')
         assert res['data']['filesize'] == 1500000
-        res = cos.delete_file('cos_test/slice.txt')
+        res = self.cos.delete_file('cos_test/slice.txt')
         assert res['code'] == 0
 
     def test_fetch_and_upload(self):
         # 抓取并上传
-        res = cos.upload_file_from_url(
+        res = self.cos.upload_file_from_url(
             'https://imgcache.qq.com/open_proj/proj_qcloud_v2/gateway'
             '/portal/css/img/home/tc-footer-qr-wechat-m.png',
             '1.png',
             dir_name='/cos_test',
         )
         assert res['code'] == 0
-        res = cos.delete_file('cos_test/1.png')
+        res = self.cos.delete_file('cos_test/1.png')
         assert res['code'] == 0
 
-        res = cos.upload_file_from_url('http://a_url_not_exist', '1.txt')
+        res = self.cos.upload_file_from_url('http://a_url_not_exist', '1.txt')
         assert res['error']

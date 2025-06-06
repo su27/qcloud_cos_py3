@@ -45,35 +45,40 @@ class MyWriter(MultipartWriter):
 
 class CosBucket(object):
 
-    def __init__(self, app_id, secret_id, secret_key, bucket_name, region='sh'):
+    def __init__(self, app_id, secret_id, secret_key, bucket_name, region='sh',
+                 endpoint=None):
         self.config = CosConfig(app_id, secret_id, secret_key, region, bucket_name)
+        self.endpoint = endpoint or '{region}.file.myqcloud.com'
         self.signer = CosAuth(self.config)
         self.headers = {'Content-Type': 'application/json'}
 
     def _format_url(self, url_pattern, **extra):
-        url_pattern = "http://{region}.file.myqcloud.com" + url_pattern
+        base = 'https://' + self.endpoint.format(**self.config._asdict())
+        url_pattern = base + url_pattern
         return url_pattern.format(**self.config._asdict(), **extra)
 
     def _req(self, method, url, *args, **kwargs):
         assert method in ('get', 'post')
         send_req = getattr(requests, method)
         res = {}
+        last_err = None
         for _ in range(MAX_RETRY):
             try:
-                res = send_req(url, *args, **kwargs).json()
-            except:
+                resp = send_req(url, *args, **kwargs)
+                resp.raise_for_status()
+                res = resp.json()
+            except (requests.RequestException, ValueError) as e:
+                last_err = e
+                time.sleep(1)
                 continue
-            code = res['code']
-            # Operating too fast or
-            # Writing too fast on a single dir
+            code = res.get('code')
             if code in (-71, -143):
                 time.sleep(random.randint(1, 3))
                 continue
             else:
                 return res
-        else:
-            raise Exception('API request failed when %s %s: %s'
-                            % (method, url, res))
+        raise Exception('API request failed when %s %s: %s (%s)'
+                        % (method, url, res, last_err))
 
     def create_folder(self, dir_name, *, biz_attr=''):
         """
@@ -229,8 +234,7 @@ class CosBucket(object):
             writer.append(pl_ir)
             writer.append(pl_fc)
 
-        conn = aiohttp.TCPConnector(verify_ssl=False)
-        async with aiohttp.ClientSession(connector=conn) as session:
+        async with aiohttp.ClientSession() as session:
             async with session.post(url, data=writer, headers=headers,
                                     timeout=TIMEOUT) as resp:
                 return await resp.json()
