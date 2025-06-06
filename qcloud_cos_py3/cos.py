@@ -1,12 +1,12 @@
 import os
-import aiohttp
 import time
 import random
-from aiohttp import MultipartWriter
-from aiohttp.hdrs import CONTENT_DISPOSITION, CONTENT_TYPE
-from aiohttp.payload import StringPayload, BytesPayload
+import asyncio
 from collections import namedtuple
-import requests
+try:
+    import requests
+except ImportError:  # pragma: no cover - optional dependency
+    requests = None
 from io import BytesIO
 
 from .cos_auth import CosAuth
@@ -19,61 +19,44 @@ CosConfig = namedtuple(
 
 MAX_RETRY = 3
 
-
-class MyWriter(MultipartWriter):
-    """
-    aiohttp 的 HTTP header 中，boundary 是带引号的，
-    但 COS 不支持带引号的 boundary，只能重写writer，把引号删掉
-    """
-
-    def __init__(self, subtype='mixed', boundary=None):
-        super().__init__(subtype=subtype, boundary=boundary)
-        self._content_type = self._content_type.replace('"', '')
-
-    def append_payload(self, payload):
-        """Adds a new body part to multipart writer."""
-        if payload.content_type == 'application/octet-stream':
-            payload.headers[CONTENT_TYPE] = payload.content_type
-
-        # render headers
-        headers = ''.join(
-            [k + ': ' + v + '\r\n' for k, v in payload.headers.items()]
-        ).encode('utf-8') + b'\r\n'
-
-        self._parts.append((payload, headers, '', ''))
-
-
 class CosBucket(object):
 
-    def __init__(self, app_id, secret_id, secret_key, bucket_name, region='sh'):
+    def __init__(self, app_id, secret_id, secret_key, bucket_name, region='sh',
+                 endpoint=None):
         self.config = CosConfig(app_id, secret_id, secret_key, region, bucket_name)
+        self.endpoint = endpoint or '{region}.file.myqcloud.com'
         self.signer = CosAuth(self.config)
         self.headers = {'Content-Type': 'application/json'}
 
     def _format_url(self, url_pattern, **extra):
-        url_pattern = "http://{region}.file.myqcloud.com" + url_pattern
+        base = 'https://' + self.endpoint.format(**self.config._asdict())
+        url_pattern = base + url_pattern
         return url_pattern.format(**self.config._asdict(), **extra)
 
     def _req(self, method, url, *args, **kwargs):
         assert method in ('get', 'post')
+        if requests is None:
+            raise ImportError('requests package is required for network access')
         send_req = getattr(requests, method)
         res = {}
+        last_err = None
         for _ in range(MAX_RETRY):
             try:
-                res = send_req(url, *args, **kwargs).json()
-            except:
+                resp = send_req(url, *args, **kwargs)
+                resp.raise_for_status()
+                res = resp.json()
+            except (requests.RequestException, ValueError) as e:
+                last_err = e
+                time.sleep(1)
                 continue
-            code = res['code']
-            # Operating too fast or
-            # Writing too fast on a single dir
+            code = res.get('code')
             if code in (-71, -143):
                 time.sleep(random.randint(1, 3))
                 continue
             else:
                 return res
-        else:
-            raise Exception('API request failed when %s %s: %s'
-                            % (method, url, res))
+        raise Exception('API request failed when %s %s: %s (%s)'
+                        % (method, url, res, last_err))
 
     def create_folder(self, dir_name, *, biz_attr=''):
         """
@@ -214,26 +197,17 @@ class CosBucket(object):
         headers = {
             'Authorization': self.signer.sign_more(self.config.bucket, '', 30)
         }
-        pl_op = StringPayload('upload')
-        pl_op.set_content_disposition('form-data', name='op')
-        pl_bz = StringPayload(biz_attr)
-        pl_bz.set_content_disposition('form-data', name='biz_attr')
-        pl_ir = StringPayload(insert)
-        pl_ir.set_content_disposition('form-data', name='insertOnly')
-        pl_fc = BytesPayload(file_stream.read())
-        pl_fc.set_content_disposition('form-data', name='filecontent', filename='')
-        pl_fc._headers[CONTENT_DISPOSITION] = 'form-data; name="filecontent"; filename=""'
-        with MyWriter('form-data') as writer:
-            writer.append(pl_op)
-            writer.append(pl_bz)
-            writer.append(pl_ir)
-            writer.append(pl_fc)
+        data = file_stream.read()
 
-        conn = aiohttp.TCPConnector(verify_ssl=False)
-        async with aiohttp.ClientSession(connector=conn) as session:
-            async with session.post(url, data=writer, headers=headers,
-                                    timeout=TIMEOUT) as resp:
-                return await resp.json()
+        def _upload():
+            return self.upload_file(
+                BytesIO(data), upload_filename,
+                dir_name=dir_name, biz_attr=biz_attr,
+                replace=replace, mime=mime,
+            )
+
+        loop = asyncio.get_event_loop()
+        return await loop.run_in_executor(None, _upload)
 
     def _upload_slice_control(self, file_size, slice_size, biz_attr, replace):
         headers = {
@@ -325,10 +299,12 @@ class CosBucket(object):
         :param file_name: 文件名称
         :param dir_name: 文件夹名称（可选）
         """
+        if requests is None:
+            raise ImportError('requests package is required for network access')
         try:
             r = requests.get(url)
             r.raise_for_status()
-        except:
+        except Exception:
             return {'error': 'download file failed'}
         return self.upload_file(
             BytesIO(r.content), file_name, dir_name=dir_name,
@@ -347,6 +323,8 @@ class CosBucket(object):
                 self.config.bucket, file_path, 30
             )
         }
+        if requests is None:
+            raise ImportError('requests package is required for network access')
         return requests.get(url, headers=headers).content
 
     def move_file(self, source_file_path, dest_file_path):
